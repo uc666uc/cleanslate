@@ -1,0 +1,40 @@
+name: Build CleanSlate
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Compile CleanSlate.exe
+        shell: cmd
+        run: |
+          cl /nologo /std:c++17 /O2 /MT /EHsc /DUNICODE /D_UNICODE /D_WIN32_WINNT=0x0A00 /DNDEBUG CleanSlate.cpp /link /SUBSYSTEM:WINDOWS /ENTRY:wWinMainCRTStartup comctl32.lib shell32.lib ole32.lib uuid.lib user32.lib gdi32.lib /OUT:CleanSlate.exe
+
+      - name: Verify exe exists
+        shell: cmd
+        run: |
+          if not exist CleanSlate.exe (
+            echo [!] Build produced no exe
+            exit /b 1
+          )
+          dir CleanSlate.exe
+
+      - name: Upload portable exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: CleanSlate-portable
+          path: CleanSlate.exe
+          if-no-files-found: error
